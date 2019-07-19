@@ -1,0 +1,38 @@
+This is an implementation of "Vectorization of Line Drawings via PolyVector Fields" by Mikhail Bessmeltsev and Justin Solomon, Massachusetts Institute of Technology, 2018. 
+Actual coding done by Mikhail Bessmeltsev.
+
+USAGE:
+./polyvector(.exe) filename
+
+OUTPUT:
+Creates a filename.svg in the same folder. 
+
+REQUIREMENTS:
+(Other versions might also work, but these are the ones I used)
+QT 5.7
+OpenCV 2.4
+Boost 1.65.1
+Gurobi 7.5.1
+Eigen 3.3.1
+
+BUILDING:
+1. Create folder 'build' in the same folder as this README.
+2. In cmd (windows) or sh/bash (linux/mac):
+    cd build
+    cmake ..
+    make
+(If you are on Windows, the last instruction will depend on the compiler you're using, e.g. 'nmake' for Visual Studio)
+3. You might have to modify cmake/FindGUROBI.cmake if it's not found automatically. 
+
+PARAMETERS:
+1. All the tunable parameters are in Params.h
+2. In a couple of places in the code there are seemingly random constants like 10 - those are implementation-dependent constants and have nothing to do with algorithm parameters. Proper engineering would fix those, but before that happens - please do not change.
+
+NOTES:
+1. This is not the optimized version we tested for performance. The optimized version is available upon request.
+2. There are a few minor changes from the paper description:
+	- Section 5.2 has been reimplemented since the submission for robustness. This might have introduced minor (~2 pixel)-differences to some of the results, mostly making them better.
+	- Instead of outputting a raw non-smooth vectorization with many segments, which takes a while to output, we use Douglas-Peucker algorithm and then Laplacian smoothing on the result. Douglas-Peucker does not change anything significant in the result, except for the density of the control points. Laplacian smoothing was not used for the paper results, instead we used, as we noted, Adobe Illustrator's 'Simplify' feature. Those two steps were added to immediately output a decent .svg if Illustrator is not available.
+	
+KNOWN ISSUES:
+1. Output might contain 'nan's. Your importer/viewer should ignore those points.
