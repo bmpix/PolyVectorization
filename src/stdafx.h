@@ -18,7 +18,6 @@
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
-#include <gurobi_c++.h>
 #include "typedefs.h"
 #include "graph_typedefs.h"
 #include "intersections.h"

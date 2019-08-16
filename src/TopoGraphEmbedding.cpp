@@ -558,231 +558,201 @@ std::tuple<std::vector<MyPolyline>, std::vector<std::vector<double>>, std::vecto
 
 		std::cout << potentialLocations.size() << " locs...";
 
-		try {
-			GRBEnv env = GRBEnv();
-			GRBModel model = GRBModel(env);
-			auto name = [](size_t v, int i)
-			{
-				std::stringstream s;
-				s << "x" << v << "_" << i;
-				return s.str();
-			};
+		std::vector<std::pair<size_t, size_t>> adjTopoEdges;
+		std::vector<int> myAdjChains;
 
-			std::map<std::pair<size_t, int>, GRBVar> vars;
+		for (int j = 0; j < tGraph.size(); ++j)
+		{
+			auto& e = tGraph[j];
+			if ((e.first == theVertex) || (e.second == theVertex))
+			{
+				if (boost::degree(e.second, g) > 2)
+					std::swap(e.first, e.second);
+
+				adjTopoEdges.push_back(e);
+				myAdjChains.push_back(j);
+			}
+		}
+
+		if ((d.seedType[seedIdx] == Distances::ST_REGULAR) || (d.seedType[seedIdx] == Distances::ST_LOOP))
+		{
+			double test = 0;
+
+			std::vector<double> sums(potentialLocations.size(), 0);
+			for (int ii = 0; ii < adjTopoEdges.size(); ++ii)
+			{
+				auto e = adjTopoEdges[ii];
+				std::cout << e.first << "-" << e.second << std::endl;
+				size_t tag = d.clusterAndPtToIndex[seedIdx][std::make_pair(e.second, g[e.second].clusterPoints.size() / 2)];
+
+				if (d.seedType[seedIdx] == Distances::ST_LOOP)
+					tag += 100000 * (myAdjChains[ii] + 1);
+
+				for (int i = 0; i < potentialLocations.size(); ++i)
+				{
+					int idx = d.clusterAndPtToIndex[seedIdx][potentialLocations[i]];
+					double w = d.D[seedIdx][tag][idx];
+
+					std::vector<size_t> endPts;
+					bool closeToAnEndPoint = false;
+					for (const auto& ee : adjTopoEdges)
+					{
+						for (size_t vv : {ee.first, ee.second})
+						{
+							if ((boost::degree(vv, g) == 1) && (potentialLocations[i].first != vv) && ((g[vv].location - g[potentialLocations[i].first].location).norm() < 1))
+								closeToAnEndPoint = true;
+						}
+					}
+
+					if (closeToAnEndPoint)
+					{
+						w = 1000;
+					}
+
+					if (w > 1e5)
+						w = 1000;
+
+					if ((potentialLocations[i].first == e.second) && (d.seedType[seedIdx] == Distances::ST_LOOP)) //corner case: loops minimum of distance is when they are collapsed
+						w = 1000;
+
+					sums[i] += w;
+				}
+			}
+
+			double myMin = 1000;
+			int myWinner = -1;
 			for (int i = 0; i < potentialLocations.size(); ++i)
 			{
-				vars[std::make_pair(theVertex, i)] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, name(theVertex, i));
+				if (myMin > sums[i])
+				{
+					myMin = sums[i];
+					myWinner = i;
+				}
 			}
 
-			std::cout << " vars ok...";
-
-			GRBLinExpr objective = 0;
-			std::vector<std::pair<size_t, size_t>> adjTopoEdges;
-			std::vector<int> myAdjChains;
-
-			for (int j = 0; j < tGraph.size(); ++j)
+			result[theVertex] = potentialLocations[myWinner];
+			std::cout << "Vertex " << theVertex << " decided to attach to " << potentialLocations[myWinner].first << " vertex " << potentialLocations[myWinner].second << " sample" << std::endl;
+		}
+		else
+		{
+			//if it's a non-standard seed, the embedding is fixed
+			for (const auto& e : tGraph)
 			{
-				auto& e = tGraph[j];
 				if ((e.first == theVertex) || (e.second == theVertex))
 				{
-					if (boost::degree(e.second, g) > 2)
-						std::swap(e.first, e.second);
-
-					adjTopoEdges.push_back(e);
-					myAdjChains.push_back(j);
+					result[e.first] = { e.first,g[e.first].clusterPoints.size() / 2 };
+					result[e.second] = { e.second, g[e.second].clusterPoints.size() / 2 };
 				}
 			}
-
-			if ((d.seedType[seedIdx] == Distances::ST_REGULAR) || (d.seedType[seedIdx] == Distances::ST_LOOP))
-			{
-				double test = 0;
-				for (int ii = 0; ii < adjTopoEdges.size(); ++ii)
-				{
-					auto e = adjTopoEdges[ii];
-					std::cout << e.first << "-" << e.second << std::endl;
-					size_t tag = d.clusterAndPtToIndex[seedIdx][std::make_pair(e.second, g[e.second].clusterPoints.size() / 2)];
-
-					if (d.seedType[seedIdx] == Distances::ST_LOOP)
-						tag += 100000 * (myAdjChains[ii] + 1);
-
-					for (int i = 0; i < potentialLocations.size(); ++i)
-					{
-						int idx = d.clusterAndPtToIndex[seedIdx][potentialLocations[i]];
-						double w = d.D[seedIdx][tag][idx];
-
-						std::vector<size_t> endPts;
-						bool closeToAnEndPoint = false;
-						for (const auto& ee : adjTopoEdges)
-						{
-							for (size_t vv : {ee.first, ee.second})
-							{
-								if ((boost::degree(vv, g) == 1) && (potentialLocations[i].first != vv) && ((g[vv].location - g[potentialLocations[i].first].location).norm() < 1))
-									closeToAnEndPoint = true;
-							}
-						}
-
-						if (closeToAnEndPoint)
-						{
-							w = 1000;
-						}
-
-						if (w > 1e5)
-							w = 1000;
-
-						if ((potentialLocations[i].first == e.second) && (d.seedType[seedIdx] == Distances::ST_LOOP)) //corner case: loops minimum of distance is when they are collapsed
-							w = 1000;
-
-						objective += (w)* vars[std::make_pair(e.first, i)];
-					}
-				}
-
-				model.setObjective(objective, GRB_MINIMIZE);
-				std::cout << " objective ok... ";
-
-				GRBLinExpr constraint = 0;
-				for (int i = 0; i < potentialLocations.size(); ++i)
-					constraint += vars[std::make_pair(theVertex, i)];
-
-				model.addConstr(constraint == 1, "c");
-
-				model.optimize();
-				std::cout << "Solution: ";
-
-				for (int i = 0; i < potentialLocations.size(); ++i)
-				{
-					if (fabs(vars[std::make_pair(theVertex, i)].get(GRB_DoubleAttr_X) - 1.0) < 1e-5)
-					{
-						result[theVertex] = potentialLocations[i];
-						std::cout << "Vertex " << theVertex << " decided to attach to " << potentialLocations[i].first << " vertex " << potentialLocations[i].second << " sample" << std::endl;
-						break;
-					}
-				}
-			}
-			else
-			{
-				//if it's a non-standard seed, the embedding is fixed
-				for (const auto& e : tGraph)
-				{
-					if ((e.first == theVertex) || (e.second == theVertex))
-					{
-						result[e.first] = { e.first,g[e.first].clusterPoints.size() / 2 };
-						result[e.second] = { e.second, g[e.second].clusterPoints.size() / 2 };
-					}
-				}
-			}
-
-			std::cout << "Reconstructing the path... ";
-			std::vector<std::vector<std::pair<int, int>>> paths;
-
-			std::vector<MyPolyline> newPolylines;
-			std::vector < std::vector<double>> newRadii;
-			for (int i = 0; i < adjTopoEdges.size(); ++i)
-			{
-				auto e = adjTopoEdges[i];
-				int j = myAdjChains[i]; //matters only if it's a loop
-				std::vector<std::pair<int, int>> path;
-				//e.first = theVertex				
-				d.reconstructPath(e.second, g[e.second].clusterPoints.size() / 2, result[e.first].first, result[e.first].second, seedIdx, j, path);
-				paths.push_back(path);
-				newRadii.push_back({});
-				newPolylines.push_back(d.convertToActualPolyline(g, path, polys, newRadii.back()));
-
-				std::cout << newPolylines.back().size() << std::endl;
-
-			}
-
-			//also, merge adjChains[0] and its continuation
-			double bestDot = 1;
-			int connect0ChainWith = -1;
-			const int step = 10;
-			Eigen::Vector2d v0 = newPolylines[0][std::max(0, (int)newPolylines[0].size() - step)] - newPolylines[0].back();
-			v0.normalize();
-			for (int i = 1; i < newPolylines.size(); ++i)
-			{
-				Eigen::Vector2d vi = newPolylines[i][std::max(0, (int)newPolylines[i].size() - step)] - newPolylines[i].back();
-				double dot = vi.normalized().dot(v0);
-				if (dot < bestDot)
-				{
-					bestDot = dot;
-					connect0ChainWith = i;
-				}
-			}
-
-			PointOnCurve junctionPt;
-
-			if (connect0ChainWith != -1)
-			{
-				std::pair<int, int> bestPair;
-				double bestDist = std::numeric_limits<double>::max();
-				for (int end1 : { 0, (int)newPolylines[0].size() - 1 })
-					for (int end2 : {0, (int)newPolylines[connect0ChainWith].size() - 1})
-					{
-						double dist = (newPolylines[0][end1] - newPolylines[connect0ChainWith][end2]).squaredNorm();
-						if (dist < bestDist)
-						{
-							bestDist = dist;
-							bestPair = std::make_pair(end1, end2);
-						}
-					}
-
-				if (bestPair.first == 0)
-				{
-					std::reverse(paths[0].begin(), paths[0].end());
-					std::reverse(newPolylines[0].begin(), newPolylines[0].end());
-					std::reverse(newRadii[0].begin(), newRadii[0].end());
-				}
-
-				if (bestPair.second != 0)
-				{
-					std::reverse(paths[connect0ChainWith].begin(), paths[connect0ChainWith].end());
-					std::reverse(newPolylines[connect0ChainWith].begin(), newPolylines[connect0ChainWith].end());
-					std::reverse(newRadii[connect0ChainWith].begin(), newRadii[connect0ChainWith].end());
-				}
-
-				junctionPt.curve = actualResult.size();
-				junctionPt.segmentIdx = newPolylines[0].size();
-				newPolylines[0].insert(newPolylines[0].end(), newPolylines[connect0ChainWith].begin(), newPolylines[connect0ChainWith].end());
-				protectedEnds.push_back({ boost::degree(paths[0].front().first, g) != 1, boost::degree(paths[connect0ChainWith].back().first, g) != 1 });
-				newRadii[0].insert(newRadii[0].end(), newRadii[connect0ChainWith].begin(), newRadii[connect0ChainWith].end());
-			}
-			else
-				std::cout << "SOMETHIGN WENT WRONG" << std::endl;
-
-			for (int i = 1; i < adjTopoEdges.size(); ++i)
-			{
-				if (i == connect0ChainWith)
-					continue;
-
-				auto e = adjTopoEdges[i];
-
-				bool keepOtherEnd = boost::degree(e.second, g) != 1;
-				if (paths[i].back().first == e.second)
-					protectedEnds.push_back({ false,keepOtherEnd });
-				else
-					protectedEnds.push_back({ keepOtherEnd,false });
-			}
-
-			for (int i = 0; i < newPolylines.size(); ++i)
-			{
-				if (i != connect0ChainWith)
-				{
-					PointOnCurve pt;
-					pt.curve = actualResult.size();
-					pt.segmentIdx = (int)newPolylines[i].size() - 1;
-					actualResult.push_back(newPolylines[i]);
-					radii.push_back(newRadii[i]);
-
-					if (i != 0)
-						yJunctionInfo.push_back(std::make_pair(junctionPt, pt));
-				}
-			}
-
-			std::cout << "done." << std::endl;
 		}
-		catch (GRBException exc)
+
+		std::cout << "Reconstructing the path... ";
+		std::vector<std::vector<std::pair<int, int>>> paths;
+
+		std::vector<MyPolyline> newPolylines;
+		std::vector < std::vector<double>> newRadii;
+		for (int i = 0; i < adjTopoEdges.size(); ++i)
 		{
-			std::cout << "Gurobi error (code " << exc.getErrorCode() << "): " << exc.getMessage() << std::endl;
+			auto e = adjTopoEdges[i];
+			int j = myAdjChains[i]; //matters only if it's a loop
+			std::vector<std::pair<int, int>> path;
+			//e.first = theVertex				
+			d.reconstructPath(e.second, g[e.second].clusterPoints.size() / 2, result[e.first].first, result[e.first].second, seedIdx, j, path);
+			paths.push_back(path);
+			newRadii.push_back({});
+			newPolylines.push_back(d.convertToActualPolyline(g, path, polys, newRadii.back()));
+
+			std::cout << newPolylines.back().size() << std::endl;
+
 		}
+
+		//also, merge adjChains[0] and its continuation
+		double bestDot = 1;
+		int connect0ChainWith = -1;
+		const int step = 10;
+		Eigen::Vector2d v0 = newPolylines[0][std::max(0, (int)newPolylines[0].size() - step)] - newPolylines[0].back();
+		v0.normalize();
+		for (int i = 1; i < newPolylines.size(); ++i)
+		{
+			Eigen::Vector2d vi = newPolylines[i][std::max(0, (int)newPolylines[i].size() - step)] - newPolylines[i].back();
+			double dot = vi.normalized().dot(v0);
+			if (dot < bestDot)
+			{
+				bestDot = dot;
+				connect0ChainWith = i;
+			}
+		}
+
+		PointOnCurve junctionPt;
+
+		if (connect0ChainWith != -1)
+		{
+			std::pair<int, int> bestPair;
+			double bestDist = std::numeric_limits<double>::max();
+			for (int end1 : { 0, (int)newPolylines[0].size() - 1 })
+				for (int end2 : {0, (int)newPolylines[connect0ChainWith].size() - 1})
+				{
+					double dist = (newPolylines[0][end1] - newPolylines[connect0ChainWith][end2]).squaredNorm();
+					if (dist < bestDist)
+					{
+						bestDist = dist;
+						bestPair = std::make_pair(end1, end2);
+					}
+				}
+
+			if (bestPair.first == 0)
+			{
+				std::reverse(paths[0].begin(), paths[0].end());
+				std::reverse(newPolylines[0].begin(), newPolylines[0].end());
+				std::reverse(newRadii[0].begin(), newRadii[0].end());
+			}
+
+			if (bestPair.second != 0)
+			{
+				std::reverse(paths[connect0ChainWith].begin(), paths[connect0ChainWith].end());
+				std::reverse(newPolylines[connect0ChainWith].begin(), newPolylines[connect0ChainWith].end());
+				std::reverse(newRadii[connect0ChainWith].begin(), newRadii[connect0ChainWith].end());
+			}
+
+			junctionPt.curve = actualResult.size();
+			junctionPt.segmentIdx = newPolylines[0].size();
+			newPolylines[0].insert(newPolylines[0].end(), newPolylines[connect0ChainWith].begin(), newPolylines[connect0ChainWith].end());
+			protectedEnds.push_back({ boost::degree(paths[0].front().first, g) != 1, boost::degree(paths[connect0ChainWith].back().first, g) != 1 });
+			newRadii[0].insert(newRadii[0].end(), newRadii[connect0ChainWith].begin(), newRadii[connect0ChainWith].end());
+		}
+		else
+			std::cout << "SOMETHIGN WENT WRONG" << std::endl;
+
+		for (int i = 1; i < adjTopoEdges.size(); ++i)
+		{
+			if (i == connect0ChainWith)
+				continue;
+
+			auto e = adjTopoEdges[i];
+
+			bool keepOtherEnd = boost::degree(e.second, g) != 1;
+			if (paths[i].back().first == e.second)
+				protectedEnds.push_back({ false,keepOtherEnd });
+			else
+				protectedEnds.push_back({ keepOtherEnd,false });
+		}
+
+		for (int i = 0; i < newPolylines.size(); ++i)
+		{
+			if (i != connect0ChainWith)
+			{
+				PointOnCurve pt;
+				pt.curve = actualResult.size();
+				pt.segmentIdx = (int)newPolylines[i].size() - 1;
+				actualResult.push_back(newPolylines[i]);
+				radii.push_back(newRadii[i]);
+
+				if (i != 0)
+					yJunctionInfo.push_back(std::make_pair(junctionPt, pt));
+			}
+		}
+
+		std::cout << "done." << std::endl;
 	}
 
 	std::cout << "All done in " << double(begin + clock()) / CLOCKS_PER_SEC << " seconds. " << std::endl;

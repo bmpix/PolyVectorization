@@ -43,16 +43,6 @@ message(STATUS "Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
 target_include_directories(polyvector_thing PUBLIC ${Boost_INCLUDE_DIR})
 target_link_libraries(polyvector_thing PUBLIC ${Boost_LIBRARIES})
 
-##### Gurobi #####
-find_package(GUROBI REQUIRED)
-if(GUROBI_FOUND)
-  message(STATUS "Gurobi found")
-  target_include_directories(polyvector_thing PUBLIC ${GUROBI_INCLUDE_DIRS})
-  target_link_libraries(polyvector_thing PUBLIC ${GUROBI_LIBRARIES})
-else(GUROBI_FOUND)
-  message(FATAL_ERROR "Gurobi not found, quitting")
-endif(GUROBI_FOUND)
-
 ##### Sources #####
 add_subdirectory(src)
 

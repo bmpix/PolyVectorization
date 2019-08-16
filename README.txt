@@ -9,10 +9,9 @@ Creates a filename.svg in the same folder.
 
 REQUIREMENTS:
 (Other versions might also work, but these are the ones I used)
-QT 5.7
+QT 5.7 (for the version with GUI, see line 2 of main.cpp)
 OpenCV 2.4
 Boost 1.65.1
-Gurobi 7.5.1
 Eigen 3.3.1
 
 BUILDING:
@@ -22,7 +21,6 @@ BUILDING:
     cmake ..
     make
 (If you are on Windows, the last instruction will depend on the compiler you're using, e.g. 'nmake' for Visual Studio)
-3. You might have to modify cmake/FindGUROBI.cmake if it's not found automatically. 
 
 PARAMETERS:
 1. All the tunable parameters are in Params.h
