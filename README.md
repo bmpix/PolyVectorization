@@ -10,10 +10,10 @@ Creates a filename.svg in the same folder.
 ## Requirements
 
 (Other versions might also work, but these are the ones I used)
-QT 5.7 (for the version with GUI, see line 2 of main.cpp)
-OpenCV 2.4
-Boost 1.65.1
-Eigen 3.3.1
+- QT 5.7 (for the version with GUI, see line 2 of main.cpp)
+- OpenCV 2.4
+- Boost 1.65.1
+- Eigen 3.3.1
 
 ## Citation
 
@@ -39,11 +39,11 @@ When using the code in your research work, please cite the following paper:
 
 ## Building
 
-1. Create folder 'build' in the same folder as this README.
-2. In cmd (windows) or sh/bash (linux/mac):
-   > cd build
-   > cmake ..
-   > make
+1. Create folder 'build' in the same folder as this README.  
+2. In cmd (windows) or sh/bash (linux/mac):  
+   > cd build  
+   > cmake ..  
+   > make  
 (If you are on Windows, the last instruction will depend on the compiler you're using, e.g. 'nmake' for Visual Studio)
 
 ## Parameters
