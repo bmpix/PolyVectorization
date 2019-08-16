@@ -28,8 +28,6 @@ target_sources(polyvector_thing PRIVATE
                     src/graph_typedefs.h
                     src/greedyTrace.cpp
                     src/greedyTrace.h
-                    src/GurobiLSLinIneqSolver.cpp
-                    src/GurobiLSLinIneqSolver.h
                     src/HermiteSpline.h
                     src/imagequiverviewer.cpp
                     src/imagequiverviewer.hpp
