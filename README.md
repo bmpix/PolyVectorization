@@ -44,6 +44,7 @@ When using the code in your research work, please cite the following paper:
    > cd build  
    > cmake ..  
    > make  
+
 (If you are on Windows, the last instruction will depend on the compiler you're using, e.g. 'nmake' for Visual Studio)
 
 ## Parameters
@@ -58,7 +59,7 @@ When using the code in your research work, please cite the following paper:
 	- Section 5.2 has been reimplemented since the submission for robustness. This might have introduced minor (~2 pixel)-differences to some of the results, mostly making them better.
 	- Instead of outputting a raw non-smooth vectorization with many segments, which takes a while to output, we use Douglas-Peucker algorithm and then Laplacian smoothing on the result. Douglas-Peucker does not change anything significant in the result, except for the density of the control points. Laplacian smoothing was not used for the paper results, instead we used, as we noted, Adobe Illustrator's 'Simplify' feature. Those two steps were added to immediately output a decent .svg if Illustrator is not available.
 3. If you want to build a command-line tool without GUI, comment out this line in the beginning of main.cpp:
-        #define WITH_GUI 1
+     >  #define WITH_GUI 1
 	
 ## Known Issues
 
