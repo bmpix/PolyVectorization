@@ -29,7 +29,7 @@ std::array<std::complex<double>, 2> bilinearInterpCoeff(const Eigen::VectorXcd &
 		std::complex<double> X_22 = extMask.at<uchar>(i2, j2) != 0 ? X(indices(i2, j2) +rootIdx*nonzeros) : 0;
 		Eigen::Matrix2cd M;
 		M << X_11, X_12, X_21, X_22;
-		result[rootIdx] = (1.0 / ((i2 - i1)*(j2 - j1)))*Eigen::Vector2d(i2 - i, i - i1).transpose()*M*Eigen::Vector2d(j2 - j, j - j1);
+		result[rootIdx] = (1.0 / ((i2 - i1)*(j2 - j1)))*Eigen::Vector2d(i2 - i, i - i1).dot(M*Eigen::Vector2d(j2 - j, j - j1));
 	}
 
 	return result;
