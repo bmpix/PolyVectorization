@@ -45,7 +45,7 @@ When using the code in your research work, please cite the following paper:
    > cmake ..  
    > make  
 
-(If you are on Windows, the last instruction will depend on the compiler you're using, e.g. 'nmake' for Visual Studio)
+(If you are on Windows, the last instruction will depend on the compiler you're using, e.g. 'nmake' for Visual Studio). If you want fast optimized code, replace "cmake .." by "cmake .. -D CMAKE_BUILD_TYPE=Release".
 
 ## Parameters
 
