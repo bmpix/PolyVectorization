@@ -64,3 +64,7 @@ When using the code in your research work, please cite the following paper:
 ## Known Issues
 
 1. Output might contain 'nan's. Your importer/viewer should ignore those points.
+
+## Comparisons
+
+The whole algorithm depends on the background/foreground separation, which is done via a simple intensity threshold. If you see that some lines are missing in the vectorization, that's just it. Increase the contrast of your image in some bitmap editor (Photoshop?) and rerun. Alternatively, you can adjust the threshold in the code (BACKGROUND_FOREGROUND_THRESHOLD in Params.h). So if you're comparing to our paper, please try a few contrast settings.
