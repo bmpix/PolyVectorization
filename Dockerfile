@@ -37,3 +37,6 @@ RUN sed -i 's/target_compile_definitions/#target_compile_definitions/g' /app/CMa
     make -j8 && mv polyvector_thing /usr/bin/polyvector_thing_cli && \
     rm -rf /app/build_cli
 
+# Clean 
+WORKDIR /app/
+RUN rm -rf *
