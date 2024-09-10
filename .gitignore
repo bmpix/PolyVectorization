@@ -31,3 +31,4 @@
 *.out
 *.app
 *.svg
+.vscode/settings.json
