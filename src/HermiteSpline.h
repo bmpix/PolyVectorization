@@ -7,7 +7,8 @@
 class HermiteSpline
 {
 public:
-	HermiteSpline::HermiteSpline(const Eigen::Vector2d& P0, const Eigen::Vector2d& N0, const Eigen::Vector2d& P1, const Eigen::Vector2d& N1)
+	// <https://github.com/bmpix/PolyVectorization/issues/3>
+	HermiteSpline(const Eigen::Vector2d& P0, const Eigen::Vector2d& N0, const Eigen::Vector2d& P1, const Eigen::Vector2d& N1)
 		:P0_(P0), P1_(P1), N0_(N0), N1_(N1)
 	{
 	}
@@ -43,7 +44,7 @@ public:
 		return HermiteSpline(P[1], N1, P[2], N2);
 	}
 
-	double HermiteSpline::getLength() const
+	double getLength() const
 	{
 		//The length of Hermite Curve is can't be calculated analytically.
 		//Instead of this, one may use Runge-Cutta method, but this works as well.
@@ -61,18 +62,18 @@ public:
 	}
 
 
-	Eigen::Vector2d HermiteSpline::getPoint(double t) const
+	Eigen::Vector2d getPoint(double t) const
 	{
 		return r(t);
 	}
 
 
-	Eigen::Vector2d HermiteSpline::getTangent(double t) const
+	Eigen::Vector2d getTangent(double t) const
 	{
 		return dr(t);
 	}
 
-	double HermiteSpline::getAbsCurvature(double t)
+	double getAbsCurvature(double t)
 	{
 		Eigen::Vector2d drt = dr(t);
 		Eigen::Vector2d ddrt = ddr(t);
@@ -82,7 +83,7 @@ public:
 		return dr3.cross(ddr3).norm() / (drAbs*drAbs*drAbs);
 	}
 
-	double HermiteSpline::integrateAbsCurvature()
+	double integrateAbsCurvature()
 	{
 		const int nSteps = 100;
 		double sum = 0;
@@ -114,20 +115,20 @@ public:
 
 private:
 	//radius-vector and its derivatives
-	Eigen::Vector2d HermiteSpline::r(double t) const
+	Eigen::Vector2d r(double t) const
 	{
 		double t3 = t*t*t;
 		double t2 = t*t;
 		return P0_*(2 * t3 - 3 * t2 + 1) + N0_*(t3 - 2 * t2 + t) + P1_*(-2 * t3 + 3 * t2) + N1_*(t3 - t2);
 	}
 
-	Eigen::Vector2d HermiteSpline::dr(double t) const
+	Eigen::Vector2d dr(double t) const
 	{
 		double t2 = t*t;
 		return P0_*(6 * t2 - 6 * t) + N0_*(3 * t2 - 4 * t + 1) + P1_*(-6 * t2 + 6 * t) + N1_*(3 * t2 - 2 * t);
 	}
 
-	Eigen::Vector2d HermiteSpline::ddr(double t) const
+	Eigen::Vector2d ddr(double t) const
 	{
 		return P0_*(12 * t - 6) + N0_*(6 * t - 4) + P1_*(-12 * t + 6) + N1_*(6 * t - 2);
 	}
