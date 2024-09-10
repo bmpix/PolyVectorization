@@ -17,7 +17,7 @@ Creates a filename.svg in the same folder.
 ## Requirements
 
 (Other versions might also work, but these are the ones I used)
-- QT 5.7 (for the version with GUI, see line 2 of main.cpp)
+- QT 5.7 (for the version with GUI)
 - OpenCV 2.4
 - Boost 1.65.1
 - Eigen 3.3.1
@@ -47,10 +47,31 @@ When using the code in your research work, please cite the following paper:
 ## Building
 
 1. Create folder 'build' in the same folder as this README.  
-2. In cmd (windows) or sh/bash (linux/mac):  
+2. In cmd (windows) or sh/bash (linux/mac): 
+
+> build GUI app
+
+```bash 
    > cd build  
-   > cmake ..  
+   > cmake .. -D WITH_GUI=1 -D WITH_QT=1  
+   > make
+```
+
+> build CLI qtapp
+
+```bash 
+   > cd build  
+   > cmake .. -D WITH_QT=1  
    > make  
+```
+
+> build CLI app
+
+```bash 
+   > cd build  
+   > cmake ..
+   > make  
+```
 
 (If you are on Windows, the last instruction will depend on the compiler you're using, e.g. 'nmake' for Visual Studio). If you want fast optimized code, replace "cmake .." by "cmake .. -D CMAKE_BUILD_TYPE=Release".
 
@@ -60,7 +81,13 @@ When using the code in your research work, please cite the following paper:
 make build
 ```
 
-After this simple command you will build a container that satisfies all env and is able to run the application in both gui and cli
+After this simple command you will build a container that satisfies all env and is able to run the application:
+
+```bash
+polyvector_thing $filename # GUI APP
+polyvector_thing_cli $filename # CLI APP
+polyvector_thing_cli_qt $filename # CLI QT APP
+```
 
 ## Parameters
 
@@ -73,9 +100,7 @@ After this simple command you will build a container that satisfies all env and 
 2. There are a few minor changes from the paper description:
 	- Section 5.2 has been reimplemented since the submission for robustness. This might have introduced minor (~2 pixel)-differences to some of the results, mostly making them better.
 	- Instead of outputting a raw non-smooth vectorization with many segments, which takes a while to output, we use Douglas-Peucker algorithm and then Laplacian smoothing on the result. Douglas-Peucker does not change anything significant in the result, except for the density of the control points. Laplacian smoothing was not used for the paper results, instead we used, as we noted, Adobe Illustrator's 'Simplify' feature. Those two steps were added to immediately output a decent .svg if Illustrator is not available.
-3. If you want to build a command-line tool without GUI, comment out this line in the beginning of main.cpp:
-     >  #define WITH_GUI 1
-	
+
 ## Known Issues
 
 1. Output might contain 'nan's. Your importer/viewer should ignore those points.

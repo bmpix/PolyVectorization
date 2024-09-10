@@ -1,7 +1,10 @@
 #ifndef _STDAFX_H_
 #define _STDAFX_H_
 
+#ifdef WITH_QT
 #include <QtCore/QCoreApplication>
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <numeric>

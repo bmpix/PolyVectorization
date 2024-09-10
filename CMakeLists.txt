@@ -15,9 +15,15 @@ set(CMAKE_AUTOUIC ON)
 add_executable(polyvector_thing)
 ##### QT #####
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui)
+if (WITH_QT)
+    target_compile_definitions(polyvector_thing PRIVATE WITH_QT=${WITH_QT})
+endif()
 
-target_compile_definitions(polyvector_thing PRIVATE WITH_GUI=1)
-if (Qt5_FOUND)
+if (WITH_GUI)
+    target_compile_definitions(polyvector_thing PRIVATE WITH_GUI=${WITH_GUI})
+endif()
+
+if ((Qt5_FOUND) AND (WITH_QT OR WITH_GUI))
  message(STATUS "Qt found")
  target_link_libraries(polyvector_thing PUBLIC Qt5::Core Qt5::Widgets Qt5::Gui)
 endif()

@@ -26,17 +26,20 @@ COPY cmake /app/cmake
 COPY src /app/src
 COPY CMakeLists.txt /app/
 
-WORKDIR /app/build_gui
-RUN cmake .. -D CMAKE_BUILD_TYPE=Release && \
-    make -j8 && mv polyvector_thing /usr/bin/polyvector_thing && \
-    rm -rf /app/build_gui
-
 WORKDIR /app/build_cli
-RUN sed -i 's/target_compile_definitions/#target_compile_definitions/g' /app/CMakeLists.txt && \
-    cmake .. -D CMAKE_BUILD_TYPE=Release && \
+RUN cmake .. -D CMAKE_BUILD_TYPE=Release && \
     make -j8 && mv polyvector_thing /usr/bin/polyvector_thing_cli && \
     rm -rf /app/build_cli
 
-# Clean 
+WORKDIR /app/build_cli_qt
+RUN cmake .. -D CMAKE_BUILD_TYPE=Release -D WITH_QT=1 && \
+    make -j8 && mv polyvector_thing /usr/bin/polyvector_thing_cli_qt && \
+    rm -rf /app/build_cli_qt
+
+WORKDIR /app/build_gui
+RUN cmake .. -D CMAKE_BUILD_TYPE=Release -D WITH_GUI=1 -D WITH_QT=1 && \
+    make -j8 && mv polyvector_thing /usr/bin/polyvector_thing && \
+    rm -rf /app/build_gui
+        
 WORKDIR /app/
 RUN rm -rf *
