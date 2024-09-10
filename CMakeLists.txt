@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
+
+# specify the C++ standard
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 set(CMAKE_VERBOSE_MAKEFILE ON)
 project(polyvector_thing)
 # Find includes in corresponding build directories
@@ -35,7 +40,8 @@ target_link_libraries(polyvector_thing PUBLIC ${OpenCV_LIBS})
 
 ##### Eigen #####
 find_package (Eigen3 REQUIRED NO_MODULE)
-target_link_libraries(polyvector_thing PUBLIC Eigen3::Eigen)
+add_definitions     ( ${EIGEN3_DEFINITIONS} )
+include_directories ( ${EIGEN3_INCLUDE_DIRS} )
 
 ##### Boost #####
 find_package(Boost 1.48 REQUIRED)
