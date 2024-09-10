@@ -1,13 +1,7 @@
 #include "stdafx.h"
-#define WITH_GUI 1
-#ifdef _WIN32
 #include <QtCore/QCoreApplication>
 #include "mainwindow.h"
 #include <QElapsedTimer>
-#else
-#include <sys/time.h>
-#include <unistd.h>
-#endif
 
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -263,9 +257,7 @@ std::string type2str(int type) {
 
 int main(int argc, char *argv[])
 {
-#ifdef _WIN32
 	QApplication a(argc, argv);
-#endif
 	using namespace cv;
 	Mat image;
 
@@ -292,14 +284,8 @@ int main(int argc, char *argv[])
 	bwImg = Scalar(255) - bwImg;
 	m = bwImg.rows; n = bwImg.cols; //m: height, n: width
 
-#ifdef _WIN32
 	QElapsedTimer timer;
 	timer.start();
-#else
-	struct timeval start, end;
-	long mtime, seconds, useconds;
-	gettimeofday(&start, NULL);
-#endif
 
 	//fill in the mask
 	threshold(bwImg, origMask, BACKGROUND_FOREGROUND_THRESHOLD, 255, THRESH_BINARY);
@@ -548,9 +534,9 @@ int main(int argc, char *argv[])
 #ifdef WITH_GUI
 	mw.setVectorization("Final", newVectorization);
 #endif
-#ifdef _WIN32
+
 	std::cout << "Total time: " << timer.elapsed()/1000 << " s" << std::endl;
-#endif
+
 	svg::Image bgImg(filename, n, m, -0.5, 0, 0.6);
 	double minX = std::numeric_limits<double>::max(), minY = minX, maxX = std::numeric_limits<double>::min(), maxY = maxX;
 	for (int i = 0; i<polys.size(); ++i)
