@@ -7,6 +7,13 @@ USAGE:
 OUTPUT:
 Creates a filename.svg in the same folder. 
 
+## Docker usage
+
+1. Run docker ```make run```
+2. To launch the GUI, ```polyvector_thing $filename```
+3. To launch the CLI, ```polyvector_thing_cli $filename```
+4. The data must be placed in the sample_inputs folder, or another one must be connected
+
 ## Requirements
 
 (Other versions might also work, but these are the ones I used)
@@ -46,6 +53,14 @@ When using the code in your research work, please cite the following paper:
    > make  
 
 (If you are on Windows, the last instruction will depend on the compiler you're using, e.g. 'nmake' for Visual Studio). If you want fast optimized code, replace "cmake .." by "cmake .. -D CMAKE_BUILD_TYPE=Release".
+
+## Building docker with all requirements
+
+```bash
+make build
+```
+
+After this simple command you will build a container that satisfies all env and is able to run the application in both gui and cli
 
 ## Parameters
 
