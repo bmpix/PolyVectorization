@@ -46,16 +46,37 @@ std::set<std::array<int,2>> findSingularities(std::array<Eigen::MatrixXcd, 2>& r
 	std::cout << "Singularities: ";
 	std::set<std::array<int, 2>> singularities;
 	int m = origMask.rows, n = origMask.cols;
+
+	int maxThreads = omp_get_max_threads();
+	std::vector<std::set<std::array<int, 2>>> localSets(maxThreads);
+
+	#pragma omp parallel for
 	for (int i=0; i<m; ++i)
 		for (int j = 0; j < n; ++j)
 		{
+			int tid = omp_get_thread_num();
+			if (origMask.at<uchar>(i, j) == 0)
+				continue;
+
 			if (isItASingularity({ j,i }, { roots[0](i,j),roots[1](i,j) }, roots, origMask))
 			{
-				if (singularities.find({ i,j }) == singularities.end())
+				/*if (singularities.find({i,j}) == singularities.end())
 					std::cout << i << ", " << j << "; ";
-				singularities.insert({ i,j });
+				singularities.insert({ i,j });*/
+				localSets[tid].insert({ i,j });
 			}
 		}
+
+	for (const auto& ls : localSets)
+	{
+		for (const auto& p : ls)
+		{
+			if (singularities.find(p) == singularities.end())
+				std::cout << p[0] << ", " << p[1] << "; ";
+			singularities.insert(p);
+		}
+	}
 	std::cout << std::endl;
+
 	return singularities;
 }

@@ -297,7 +297,7 @@ static std::vector<cv::Mat> computeComponentMasks(const cv::Mat& binMask)
 	for (int lbl = 1; lbl < numLabels; ++lbl) // skip label 0 (background)
 	{
 		cv::Mat comp = (labels == lbl);          // yields CV_8U with 0 or 255
-		comp.convertTo(comp, CV_8U, 255);        // ensure 0/255 explicitly
+		//comp.convertTo(comp, CV_8U, 255);        // ensure 0/255 explicitly
 		masks.push_back(comp);
 		//std::stringstream ss;
 		//ss << "Mask " << lbl << std::endl;

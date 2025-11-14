@@ -44,13 +44,17 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 	for (int i = 0; i < polys.size(); ++i)
 		bboxes.push_back(findBoundingBox(polys[i]));
 
-	std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> extraEdges;
+	int maxThreads = omp_get_max_threads();
+	std::vector<std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>> localExtraEdges(maxThreads);
 	std::vector<std::array<std::pair<double, PointOnCurve>, 2>> limits(polys.size());
 
 	std::vector<std::array<bool, 2>> isItASpecialDef2VertexUpdated = isItASpecialDeg2Vertex; //if we cut this endpoint, it's no longer special
 
+	#pragma omp parallel for schedule(dynamic)
 	for (int i = 0; i < polys.size(); ++i)
 	{
+		int tid = omp_get_thread_num();
+
 		limits[i][0].first = 0;
 		limits[i][0].second.curve = -1;
 		limits[i][1].first = polys[i].size();
@@ -111,12 +115,12 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 				if (endIdx == 1)
 					std::reverse(intersections.begin(), intersections.end());
 
-				if (!intersections.empty())
+				/*if (!intersections.empty())
 				{
 					std::cout << "Curve " << i << " intersections (endIdx = " << endIdx << "): " << std::endl;
 					for (auto ii : intersections)
 						std::cout << "c" << ii.second.curve << " at " << ii.first << "(@" << ii.second.segmentIdx << ")" << std::endl;
-				}
+				}*/
 
 				for (int k = 0; k < intersections.size(); ++k)
 				{
@@ -126,12 +130,12 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 					foundLimit = true;
 
 					if (i != intersections[k].second.curve) //remove self-loops
-						extraEdges.push_back(std::make_pair(std::make_pair(i, intersections[k].first), std::make_pair(intersections[k].second.curve, std::floor(intersections[k].second.segmentIdx))));
+						localExtraEdges[tid].push_back(std::make_pair(std::make_pair(i, intersections[k].first), std::make_pair(intersections[k].second.curve, std::floor(intersections[k].second.segmentIdx))));
 				}
 			}
 		}
 
-		std::cout << "Curve " << i << " limits: " << limits[i][0].first << " and " << limits[i][1].first << "(length: " << polys[i].size() << ")" << std::endl;
+		//std::cout << "Curve " << i << " limits: " << limits[i][0].first << " and " << limits[i][1].first << "(length: " << polys[i].size() << ")" << std::endl;
 		MyPolyline newPoly;
 		int start = limits[i][0].first > 1e-5 ? std::ceil(limits[i][0].first) : 0;
 		int end = limits[i][1].first < polys[i].size() - 1e-5 ? std::floor(limits[i][1].first) + 1 : polys[i].size();
@@ -158,7 +162,20 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 		}
 		result[i] = newPoly;
 	}
-	std::cout << "Before adding edges from Y-junctions: " << extraEdges.size() << std::endl;
+
+	std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> extraEdges;
+
+	// merge thread-local extraEdges into the single vector (serial)
+	for (int t = 0; t < maxThreads; ++t)
+	{
+		if (!localExtraEdges[t].empty())
+		{
+			extraEdges.insert(extraEdges.end(), localExtraEdges[t].begin(), localExtraEdges[t].end());
+			localExtraEdges[t].clear();
+		}
+	}
+
+	//std::cout << "Before adding edges from Y-junctions: " << extraEdges.size() << std::endl;
 	//add extraEdges from yJunctions
 	for (int i = 0; i < yJunctions.size(); ++i)
 	{
@@ -219,7 +236,7 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 		curveGraph[v2].split = isItASpecialDef2VertexUpdated[i][1];
 	}
 
-	std::cout << "Orig vertices: " << boost::num_vertices(curveGraph) << std::endl;
+	//std::cout << "Orig vertices: " << boost::num_vertices(curveGraph) << std::endl;
 
 	for (int jj = 0; jj < extraEdges.size(); ++jj)
 	{
@@ -232,7 +249,7 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 
 			if (result[curve].size() <= intersectionPt.second)
 			{
-				std::cout << "Skipping an extra edge connecting to curve " << curve << " at " << intersectionPt.second << "(length = " << result[curve].size() << ") " << std::endl;
+				//std::cout << "Skipping an extra edge connecting to curve " << curve << " at " << intersectionPt.second << "(length = " << result[curve].size() << ") " << std::endl;
 				continue;
 			}
 
@@ -261,20 +278,20 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 		curveGraph[i].width = 0;
 	}
 
-	for (int i = 0; i < boost::num_vertices(curveGraph); ++i)
+	/*for (int i = 0; i < boost::num_vertices(curveGraph); ++i)
 	{
 		std::cout << "Vertex " << i << ": " << curveGraph[i].clusterPoints[0].curve << " @" << curveGraph[i].clusterPoints[0].segmentIdx << "(length = " << result[curveGraph[i].clusterPoints[0].curve].size() << ")" << std::endl;
-	}
+	}*/
 
 	for (int i = 0; i < result.size(); ++i)
 	{
-		std::cout << "Curve " << i << " ";
+		//std::cout << "Curve " << i << " ";
 		std::sort(curveVertices[i].begin(), curveVertices[i].end(), [](const std::pair<double, int>& a, const std::pair<double, int>& b) {return a.first < b.first; });
-		for (auto& jj : curveVertices[i])
+		/*for (auto& jj : curveVertices[i])
 		{
 			std::cout << jj.second << " (@" << jj.first << ") ";
 		}
-		std::cout << std::endl;
+		std::cout << std::endl;*/
 
 		for (int j = 0; j + 1 < curveVertices[i].size(); ++j)
 		{
@@ -283,7 +300,7 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 
 			auto e = boost::add_edge(curveVertices[i][j].second, curveVertices[i][j + 1].second, curveGraph);
 			curveGraph[e.first].edgeCurve = i;
-			std::cout << "E " << curveVertices[i][j].second << " " << curveVertices[i][j + 1].second << std::endl;
+			//std::cout << "E " << curveVertices[i][j].second << " " << curveVertices[i][j + 1].second << std::endl;
 		}
 	}
 
@@ -300,7 +317,7 @@ std::pair<std::vector<MyPolyline>, G> chopFakeEnds(const std::vector<MyPolyline>
 				added[std::minmax(curveAndPtToIdx[extraEdges[i].first], curveAndPtToIdx[extraEdges[i].second])] = true;
 				auto e = boost::add_edge(curveAndPtToIdx[extraEdges[i].first], curveAndPtToIdx[extraEdges[i].second], curveGraph);
 				curveGraph[e.first].edgeCurve = -1;
-				std::cout << "Adding extra edge: " << curveAndPtToIdx[extraEdges[i].first] << " " << curveAndPtToIdx[extraEdges[i].second] << std::endl;
+				//std::cout << "Adding extra edge: " << curveAndPtToIdx[extraEdges[i].first] << " " << curveAndPtToIdx[extraEdges[i].second] << std::endl;
 			}
 		}
 	}
