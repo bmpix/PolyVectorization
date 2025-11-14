@@ -7,7 +7,6 @@
 #include "imagequiverviewer.hpp"
 #include "typedefs.h"
 #include "MyScrollArea.h"
-
 class MainWindow : public QMainWindow {
 	Q_OBJECT
 
@@ -26,7 +25,7 @@ protected:
 	void keyPressEvent(QKeyEvent * event);
 	void redraw();
 	void setScale(double newScale);
-	void wheelEvent(QWheelEvent * event);
+	virtual void wheelEvent(QWheelEvent * event);
 private:
 	const int numGraphs, numVectorizations;
 	Ui::MainWindow ui;

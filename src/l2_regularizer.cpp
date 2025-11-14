@@ -100,3 +100,58 @@ std::pair<double, Eigen::VectorXcd> l2_regularizer(const Eigen::VectorXcd & X, c
 
 	return std::make_pair(energy, grad);
 }
+
+Eigen::SparseMatrix<double> laplacian_matrix(const cv::Mat& mask, const Eigen::MatrixXi& indices, const Eigen::VectorXd& w)
+{
+	int nonzeros = countNonZero(mask);
+	Eigen::SparseMatrix<double> L(2*nonzeros, 2*nonzeros); //L = diff^T*diff
+
+	int m = mask.rows, n = mask.cols;
+	Eigen::VectorXd wTwice(w.size() * 2);
+	wTwice << w, w;
+
+	for (int dir = 0; dir < 2; dir++) //horizontal or vertical
+	{
+		std::vector<Eigen::Triplet<double>> trs;
+		for (int j = 0; j < n; ++j)
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				if (mask.at<uchar>(i, j) == 0)
+					continue;
+				int idx = indices(i, j);
+				std::pair<int, int> leftNeighbor, rightNeighbor;
+				bool useLeft = useNeighbor(i, j, m, n, (dir == 1), true, mask, leftNeighbor);
+				bool useRight = useNeighbor(i, j, m, n, (dir == 1), false, mask, rightNeighbor);
+
+				if (useLeft & useRight)
+				{
+					trs.push_back({ idx, indices(rightNeighbor.first, rightNeighbor.second),0.5 });
+					trs.push_back({ idx, indices(leftNeighbor.first, leftNeighbor.second), -0.5 });
+				}
+				else if (useLeft)
+				{
+					trs.push_back({ idx, idx, 1.0 });
+					trs.push_back({ idx, indices(leftNeighbor.first, leftNeighbor.second), -1.0 });
+				}
+				else if (useRight)
+				{
+					trs.push_back({ idx, indices(rightNeighbor.first, rightNeighbor.second), 1.0 });
+					trs.push_back({ idx, idx, -1.0 });
+				}
+			}
+		}
+
+		Eigen::SparseMatrix<double> diffMatrix(2*nonzeros, 2*nonzeros);
+		//copy trs
+		std::vector<Eigen::Triplet<double>> newTrs;
+		for (auto tr : trs)
+		{
+			newTrs.push_back({ tr.row() + nonzeros, tr.col() + nonzeros, tr.value() });
+		}
+		trs.insert(trs.end(), newTrs.begin(), newTrs.end());
+		diffMatrix.setFromTriplets(trs.begin(), trs.end());
+		L += diffMatrix.transpose() * wTwice.asDiagonal() * diffMatrix;
+	}
+	return L;
+}
