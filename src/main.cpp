@@ -440,6 +440,10 @@ int main(int argc, char *argv[])
 		std::cout << "Optimizing...";
 		//Eigen::VectorXcd X = optimize(bwImg, weight, tau, FRAME_FIELD_SMOOTHNESS_WEIGHT, compMask, indices);
 		Eigen::VectorXcd X = optimizeByLinearSolve(bwImg, weight, tau, FRAME_FIELD_SMOOTHNESS_WEIGHT, compMask, indices);
+		if (X.size() == 0) //if the linear solver failed, use iterative
+		{
+			X = optimize(bwImg, weight, tau, FRAME_FIELD_SMOOTHNESS_WEIGHT, compMask, indices);
+		}
 
 
 		std::cout << "done. " << std::endl;
@@ -468,6 +472,10 @@ int main(int argc, char *argv[])
 				break;
 
 			X = optimizeByLinearSolve(bwImg, weight, tau, FRAME_FIELD_SMOOTHNESS_WEIGHT, compMask, indices);
+			if (X.size() == 0) //if the linear solver failed, use iterative
+			{
+				X = optimize(bwImg, weight, tau, FRAME_FIELD_SMOOTHNESS_WEIGHT, compMask, indices);
+			}
 			compRoots = findRoots(X, compMask);
 			singularities = findSingularities(compRoots, X, indices, compMask);
 
